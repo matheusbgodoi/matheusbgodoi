@@ -65,7 +65,7 @@ class Matheus:
 
 <div align="center">
 
-<img height="170" src="https://github-readme-stats.vercel.app/api?username=matheusbgodoi&show_icons=true&theme=github_dark&hide_border=true&count_private=true&icon_color=E8732A&title_color=E8732A&ring_color=E8732A" />
+<img height="170" src="https://github-readme-stats.vercel.app/api?username=matheusbgodoi&show_icons=true&theme=github_dark&hide_border=true&icon_color=E8732A&title_color=E8732A&ring_color=E8732A" />
 &nbsp;
 <img height="170" src="https://github-readme-streak-stats.herokuapp.com?user=matheusbgodoi&theme=github-dark-blue&hide_border=true&ring=E8732A&fire=E8732A&currStreakLabel=E8732A&sideLabels=E8732A" />
 
