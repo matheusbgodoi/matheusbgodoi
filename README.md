@@ -1,7 +1,7 @@
 <!-- Typing animation -->
 <div align="center">
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=22&duration=3000&pause=1000&color=E8732A&center=true&vCenter=true&repeat=true&width=650&height=45&lines=Building+AI+for+Healthcare+%F0%9F%A7%AC;Founder+%26+Engineer+%40+ClueMed;Django+%7C+React+%7C+Electron+%7C+RAG;Turning+medical+chaos+into+clarity)](https://github.com/mthehang)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=22&duration=3000&pause=1000&color=E8732A&center=true&vCenter=true&repeat=true&width=650&height=45&lines=Building+AI+for+Healthcare+%F0%9F%A7%AC;Founder+%26+Engineer+%40+ClueMed;Django+%7C+React+%7C+Electron+%7C+RAG;Turning+medical+chaos+into+clarity)](https://github.com/matheusbgodoi)
 
 </div>
 
@@ -49,15 +49,15 @@ class Matheus:
 
 <div align="center">
 
-<a href="https://github.com/mthehang/clui-cc">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=mthehang&repo=clui-cc&theme=github_dark&hide_border=true&icon_color=E8732A&title_color=E8732A" />
+<a href="https://github.com/matheusbgodoi/clui-cc">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=matheusbgodoi&repo=clui-cc&theme=github_dark&hide_border=true&icon_color=E8732A&title_color=E8732A" />
 </a>
 
 </div>
 
 | | Project | Description |
 |:--|:--------|:------------|
-| **[Clui CC](https://github.com/mthehang/clui-cc)** | Claude Code Desktop | Overlay UI with multi-tab, voice input, remote control & auto-update |
+| **[Clui CC](https://github.com/matheusbgodoi/clui-cc)** | Claude Code Desktop | Overlay UI with multi-tab, voice input, remote control & auto-update |
 
 ---
 
@@ -65,9 +65,9 @@ class Matheus:
 
 <div align="center">
 
-<img height="170" src="https://github-readme-stats.vercel.app/api?username=mthehang&show_icons=true&theme=github_dark&hide_border=true&count_private=true&icon_color=E8732A&title_color=E8732A&ring_color=E8732A" />
+<img height="170" src="https://github-readme-stats.vercel.app/api?username=matheusbgodoi&show_icons=true&theme=github_dark&hide_border=true&count_private=true&icon_color=E8732A&title_color=E8732A&ring_color=E8732A" />
 &nbsp;
-<img height="170" src="https://github-readme-streak-stats.herokuapp.com?user=mthehang&theme=github-dark-blue&hide_border=true&ring=E8732A&fire=E8732A&currStreakLabel=E8732A&sideLabels=E8732A" />
+<img height="170" src="https://github-readme-streak-stats.herokuapp.com?user=matheusbgodoi&theme=github-dark-blue&hide_border=true&ring=E8732A&fire=E8732A&currStreakLabel=E8732A&sideLabels=E8732A" />
 
 </div>
 
@@ -76,9 +76,9 @@ class Matheus:
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mthehang/mthehang/output/github-snake-dark.svg" />
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mthehang/mthehang/output/github-snake.svg" />
-  <img alt="Snake animation" src="https://raw.githubusercontent.com/mthehang/mthehang/output/github-snake-dark.svg" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matheusbgodoi/matheusbgodoi/output/github-snake-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/matheusbgodoi/matheusbogoid/output/github-snake.svg" />
+  <img alt="Snake animation" src="https://raw.githubusercontent.com/matheusbgodoi/matheusbgodoi/output/github-snake-dark.svg" />
 </picture>
 
 </div>
