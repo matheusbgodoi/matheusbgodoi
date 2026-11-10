@@ -1,0 +1,40 @@
+name: Contribution graph
+on:
+  schedule:
+    - cron: "15 3 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check token
+        id: token
+        env:
+          CONTRIB_TOKEN: ${{ secrets.CONTRIB_TOKEN }}
+        run: |
+          if [ -z "$CONTRIB_TOKEN" ]; then
+            echo "CONTRIB_TOKEN secret is missing: the default token cannot see private contributions. Skipping." >&2
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Generate SVG
+        if: steps.token.outputs.ok == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.CONTRIB_TOKEN }}
+        run: python scripts/gen_contributions.py matheusbgodoi dist/contributions.svg
+      - name: Push to output branch
+        if: steps.token.outputs.ok == 'true'
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: output
+          build_dir: dist
+          keep_history: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

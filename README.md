@@ -8,6 +8,8 @@
     <a href="https://cluemed.com.br/"><img src="https://img.shields.io/badge/cluemed.com.br-%2F%2F%20health-0b0f14?style=flat-square&labelColor=0b0f14&color=147d92" alt="ClueMed" /></a>
     <img src="https://img.shields.io/badge/S%C3%A3o%20Paulo-BR-0b0f14?style=flat-square&labelColor=0b0f14&color=30363d" alt="São Paulo, Brazil" />
   </p>
+  <p><strong>Biomedical engineer turned software builder.</strong><br />
+  I build automation, applied AI and healthcare products in São Paulo, Brazil — from the first prototype to the integrations that keep it running.</p>
 </div>
 
 ```ts
@@ -17,7 +19,7 @@ import { BiomedicalEngineer, Founder, Builder } from "@matheus/core";
 export const matheus = new Builder({
   name:   "Matheus Barboza de Godoi",
   base:   "São Paulo, BR",
-  roots:  BiomedicalEngineer,                // where the mindset comes from
+  roots:  BiomedicalEngineer,                 // where the mindset comes from
   roles:  [Founder, "full-stack", "applied-ai"],
   thesis: "software that connects people, information and the work between them",
 });
@@ -25,28 +27,20 @@ export const matheus = new Builder({
 
 <img src="./assets/divider.svg" width="100%" alt="" />
 
-```rust
-// src/building.rs — what is running right now
+```yaml
+# building.yml — what is running right now
 
-pub enum Company { Keymatic, ConstaCare, ClueMed }
+keymatic:        # keymatic.com.br
+  focus: business automation & applied AI
+  shipping: [WhatsApp / Instagram workflows, API integrations, AI-assisted customer service]
 
-impl Company {
-    pub fn focus(&self) -> &'static str {
-        match self {
-            Self::Keymatic   => "business automation & applied AI",          // keymatic.com.br
-            Self::ConstaCare => "hospital asset & maintenance management",   // in development
-            Self::ClueMed    => "connected healthcare: records + workflows", // cluemed.com.br
-        }
-    }
+consta-care:     # in development
+  focus: hospital asset & maintenance management
+  shipping: [equipment registry, contracts & maintenance schedules, documentation in one place]
 
-    pub fn shipping(&self) -> Vec<&'static str> {
-        match self {
-            Self::Keymatic   => vec!["WhatsApp / Instagram workflows", "API integrations", "AI-assisted customer service"],
-            Self::ConstaCare => vec!["equipment registry", "contracts & maintenance schedules", "documentation in one place"],
-            Self::ClueMed    => vec!["patient-owned health records", "clinical workflows", "AI document processing"],
-        }
-    }
-}
+cluemed:         # cluemed.com.br
+  focus: connected healthcare
+  shipping: [patient-owned health records, clinical workflows, AI document processing]
 ```
 
 <img src="./assets/divider.svg" width="100%" alt="" />
@@ -56,11 +50,11 @@ impl Company {
 class Matheus(BiomedicalEngineer, SoftwareBuilder):
     """Product, code and integrations, end to end."""
 
-    automation  = ["APIs", "webhooks", "workflows that connect business systems"]
-    applied_ai  = ["LLMs", "RAG", "agents", "document understanding", "human review where it matters"]
-    healthcare  = ["clinical information", "hospital equipment", "maintenance workflows"]
-    products    = ["web apps", "desktop tools", "the infra behind them"]
-    local_ai    = ["MCP servers", "knowledge retrieval", "self-hosted inference (RTX 3090 / Apple Silicon)"]
+    automation = ["APIs", "webhooks", "workflows that connect business systems"]
+    applied_ai = ["LLMs", "RAG", "agents", "document understanding", "human review where it matters"]
+    healthcare = ["clinical information", "hospital equipment", "maintenance workflows"]
+    products   = ["web apps", "desktop & macOS tools", "the infra behind them"]
+    local_ai   = ["MCP servers", "knowledge retrieval", "self-hosted inference"]
 
     def ship(self, problem: Problem) -> Product:
         return self.understand(problem).prototype().integrate().iterate()
@@ -69,27 +63,27 @@ class Matheus(BiomedicalEngineer, SoftwareBuilder):
 <img src="./assets/divider.svg" width="100%" alt="" />
 
 ```toml
-# Cargo.toml — toolbox
+# toolbox.toml
 
 [languages]
-python     = "primary"
-typescript = "primary"
-swift      = "macOS / iOS tools"
-sql        = "postgresql"
+python     = "backends, pipelines, ML, MCP servers"
+typescript = "web apps, agents, Electron tools"
+swift      = "macOS / iOS utilities (quotch, personal-knowledge-mcp)"
+sql        = "PostgreSQL"
 
 [frameworks]
-django   = "*"
-react    = "*"
-electron = "*"
+django   = "APIs and admin-heavy products"
+react    = "dashboards and product UIs"
+electron = "desktop tools"
 
 [ai]
-llms            = ["OpenAI", "Anthropic", "local models"]
-patterns        = ["RAG", "agents", "tool use", "Model Context Protocol"]
-local-inference = ["RTX 3090", "Apple Silicon"]
+models    = ["Claude", "OpenAI", "local open-weights models"]
+patterns  = ["RAG", "agents", "tool use", "Model Context Protocol"]
+inference = ["RTX 3090 workstation", "Apple Silicon (MLX, Core ML)"]
 
 [infra]
-docker = "*"
-rest   = "APIs + webhooks"
+docker   = "self-hosted services and reproducible runtimes"
+webhooks = "WhatsApp, Instagram and third-party APIs"
 ```
 
 <img src="./assets/divider.svg" width="100%" alt="" />
@@ -102,7 +96,19 @@ quotch/             your AI quotas in the macOS notch — several accounts per p
 clear-request/      agent skill that turns informal software requests into clear, scoped work
 foto-macos/         instruction-based photo editing, 100% local on Apple Silicon
 local-photo-ai-m5/  on-device natural photography for Apple Silicon (CLI + MCP)
+
+$ ls ~/private | wc -l
+29
+
+$ tree -L 1 ~/private --summary
+├── local-ai/         single-GPU inference stack, OpenAI-compatible API, energy-aware
+├── mcp-servers/      WhatsApp, Instagram, Pinterest, media and personal-knowledge tools
+├── healthcare-ml/    medical document AI, echocardiography image processing
+├── video-tooling/    agent-first video editor, caption panels, social post engine
+├── embedded/         Pico W remote control, Arduino, home IoT
+└── talks/            "AI beyond ChatGPT" — PUC-SP Biomedical Engineering Week 2026
 ```
+
 <div align="center">
   <sub>
     <a href="https://github.com/matheusbgodoi/scimath-mcp">scimath-mcp</a> ·
@@ -127,11 +133,7 @@ $ cat ~/contact.json
 ```
 
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/matheusbgodoi/matheusbgodoi/output/github-snake-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/matheusbgodoi/matheusbgodoi/output/github-snake.svg" />
-    <img src="https://raw.githubusercontent.com/matheusbgodoi/matheusbgodoi/output/github-snake-dark.svg" width="100%" alt="Contribution graph snake" />
-  </picture>
+  <img src="https://raw.githubusercontent.com/matheusbgodoi/matheusbgodoi/output/contributions.svg" width="100%" alt="Contribution graph for the last year, including private work" />
   <br />
   <sub><code>// biomedical engineering roots. software builder mindset.</code></sub>
 </div>
