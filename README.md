@@ -19,45 +19,35 @@ import { BiomedicalEngineer, Founder, Builder } from "@matheus/core";
 export const matheus = new Builder({
   name:   "Matheus Barboza de Godoi",
   base:   "São Paulo, BR",
-  roots:  BiomedicalEngineer,                 // where the mindset comes from
+  roots:  BiomedicalEngineer,            // where the mindset comes from
   roles:  [Founder, "full-stack", "applied-ai"],
-  thesis: "software that connects people, information and the work between them",
+  thesis: "connect people, information and the work between them",
 });
 ```
-
-<img src="./assets/divider.svg" width="100%" alt="" />
 
 ```yaml
 # building.yml — what is running right now
 
-keymatic:        # keymatic.com.br
+keymatic:                 # keymatic.com.br
   focus: business automation & applied AI
-  shipping: [WhatsApp / Instagram workflows, API integrations, AI-assisted customer service]
+  shipping:
+    - WhatsApp / Instagram workflows
+    - API integrations
+    - AI-assisted customer service
 
-consta-care:     # in development
+consta-care:              # in development
   focus: hospital asset & maintenance management
-  shipping: [equipment registry, contracts & maintenance schedules, documentation in one place]
+  shipping:
+    - equipment registry
+    - contracts & maintenance schedules
+    - documentation in one place
 
-cluemed:         # cluemed.com.br
+cluemed:                  # cluemed.com.br
   focus: connected healthcare
-  shipping: [patient-owned health records, clinical workflows, AI document processing]
-```
-
-<img src="./assets/divider.svg" width="100%" alt="" />
-
-```python
-# src/areas.py
-class Matheus(BiomedicalEngineer, SoftwareBuilder):
-    """Product, code and integrations, end to end."""
-
-    automation = ["APIs", "webhooks", "workflows that connect business systems"]
-    applied_ai = ["LLMs", "RAG", "agents", "document understanding", "human review where it matters"]
-    healthcare = ["clinical information", "hospital equipment", "maintenance workflows"]
-    products   = ["web apps", "desktop & macOS tools", "the infra behind them"]
-    local_ai   = ["MCP servers", "knowledge retrieval", "self-hosted inference"]
-
-    def ship(self, problem: Problem) -> Product:
-        return self.understand(problem).prototype().integrate().iterate()
+  shipping:
+    - patient-owned health records
+    - clinical workflows
+    - AI document processing
 ```
 
 <img src="./assets/divider.svg" width="100%" alt="" />
@@ -91,22 +81,19 @@ webhooks = "WhatsApp, Instagram and third-party APIs"
 ```console
 $ ls --public ~/projects
 
-scimath-mcp/        unit-aware scientific computing MCP server for engineering and science
-quotch/             your AI quotas in the macOS notch — several accounts per provider
-clear-request/      agent skill that turns informal software requests into clear, scoped work
-foto-macos/         instruction-based photo editing, 100% local on Apple Silicon
-local-photo-ai-m5/  on-device natural photography for Apple Silicon (CLI + MCP)
+scimath-mcp/        unit-aware scientific computing MCP server
+quotch/             AI quotas in the macOS notch, several accounts each
+clear-request/      agent skill: informal requests in, scoped work out
+foto-macos/         instruction-based photo editing, 100% local
+local-photo-ai-m5/  on-device natural photography for Apple Silicon
 
-$ ls ~/private | wc -l
-29
-
-$ tree -L 1 ~/private --summary
-├── local-ai/         single-GPU inference stack, OpenAI-compatible API, energy-aware
-├── mcp-servers/      WhatsApp, Instagram, Pinterest, media and personal-knowledge tools
-├── healthcare-ml/    medical document AI, echocardiography image processing
-├── video-tooling/    agent-first video editor, caption panels, social post engine
-├── embedded/         Pico W remote control, Arduino, home IoT
-└── talks/            "AI beyond ChatGPT" — PUC-SP Biomedical Engineering Week 2026
+$ tree -L 1 ~/private        # ~30 repos, grouped
+├── local-ai/        single-GPU inference stack, OpenAI-compatible API
+├── mcp-servers/     WhatsApp, Instagram, Pinterest, media, knowledge
+├── healthcare-ml/   medical document AI, echocardiography imaging
+├── video-tooling/   agent-first video editor, captions, post engine
+├── embedded/        Pico W remote control, Arduino, home IoT
+└── talks/           "AI beyond ChatGPT", PUC-SP BME Week 2026
 ```
 
 <div align="center">

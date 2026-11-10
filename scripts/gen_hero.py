@@ -55,10 +55,10 @@ def pad_block(lines: list[str], width: int, height: int) -> list[str]:
 
 
 def morph(a: list[str], b: list[str], steps: int, rng: random.Random) -> list[list[str]]:
-    """Dissolve a -> b. Each cell gets a resolve time; before it, it shows noise
+    """Sweep a -> b from left to right. Each cell gets a resolve time; before it, it shows noise
     (only where either side has ink), after it, the target glyph."""
     h, w = len(a), len(a[0])
-    resolve = [[rng.random() for _ in range(w)] for _ in range(h)]
+    resolve = [[0.16 + 0.72 * (x / (w - 1)) + 0.12 * rng.random() for x in range(w)] for _ in range(h)]
     frames = []
     for s in range(1, steps + 1):
         t = s / (steps + 1)
@@ -71,7 +71,7 @@ def morph(a: list[str], b: list[str], steps: int, rng: random.Random) -> list[li
                     row.append(ca)
                     continue
                 r = resolve[y][x]
-                if t < r - 0.18:
+                if t < r - 0.14:
                     row.append(ca)
                 elif t < r:
                     row.append(rng.choice(NOISE) if (ca != " " or cb != " ") else " ")
@@ -102,11 +102,11 @@ def main(out_path: str) -> None:
     # geometry
     char_w = 9.2
     line_h = 17
-    pad_x, pad_y = 36, 92
+    pad_x, pad_y = 36, 98
     art_w = width * char_w
     svg_w = int(art_w + pad_x * 2)
     art_h = height * line_h
-    svg_h = int(pad_y + art_h + 110)
+    svg_h = int(pad_y + art_h + 122)
 
     parts: list[str] = []
     parts.append(
@@ -121,16 +121,16 @@ def main(out_path: str) -> None:
     parts.append(
         "<style>"
         f"text{{font-family:'JetBrains Mono','Fira Code','SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace;}}"
-        f".art{{font-size:14px;fill:{ACCENT};white-space:pre;}}"
-        f".ui{{font-size:12.5px;fill:{MUTED};}}"
-        f".cmd{{font-size:12.5px;fill:{TEXT};}}"
-        f".tag{{font-size:13px;fill:{ACCENT_SOFT};}}"
+        f".art{{font-size:14px;fill:url(#g);white-space:pre;}}"
+        f".ui{{font-size:14px;fill:{MUTED};}}"
+        f".cmd{{font-size:15px;fill:{TEXT};}}"
+        f".tag{{font-size:16px;fill:{ACCENT_SOFT};}}"
         f".ok{{fill:{GREEN};}}"
         "</style>"
     )
     parts.append("<defs>")
     parts.append(
-        f'<linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
+        f'<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="{pad_y - 14}" x2="0" y2="{pad_y + art_h - 10}">'
         f'<stop offset="0" stop-color="{ACCENT}"/><stop offset="1" stop-color="{ACCENT_SOFT}"/></linearGradient>'
     )
     parts.append(
@@ -161,7 +161,7 @@ def main(out_path: str) -> None:
     for idx, (lines, tag_i) in enumerate(seq):
         t0 = idx / n
         t1 = (idx + 1) / n
-        parts.append('<g opacity="0">')
+        parts.append('<g opacity="0">' if idx > 0 else '<g opacity="1">')
         parts.append(
             f'<animate attributeName="opacity" values="0;1;0" keyTimes="0;{t0:.5f};{t1:.5f}" '
             f'calcMode="discrete" dur="{total:.2f}s" repeatCount="indefinite"/>'
@@ -179,11 +179,11 @@ def main(out_path: str) -> None:
 
     # taglines (one per word, shown during hold + following morph)
     per_word = HOLD_FRAMES + MORPH_FRAMES
-    tag_y = pad_y + art_h + 18
+    tag_y = pad_y + art_h + 24
     for i, w in enumerate(WORDS):
         t0 = (i * per_word) / n
         t1 = ((i + 1) * per_word) / n
-        parts.append('<g opacity="0">')
+        parts.append('<g opacity="0">' if i > 0 else '<g opacity="1">')
         parts.append(
             f'<animate attributeName="opacity" values="0;1;0" keyTimes="0;{t0:.5f};{t1:.5f}" '
             f'calcMode="discrete" dur="{total:.2f}s" repeatCount="indefinite"/>'
@@ -198,17 +198,16 @@ def main(out_path: str) -> None:
         parts.append("</g>")
 
     # status bar
-    bar_y = svg_h - 34
+    bar_y = svg_h - 38
     parts.append(f'<line x1="1" y1="{bar_y}" x2="{svg_w-1}" y2="{bar_y}" stroke="{FRAME_STROKE}"/>')
     parts.append(
-        f'<text x="{pad_x}" y="{bar_y+22}" class="ui">'
+        f'<text x="{pad_x}" y="{bar_y+25}" class="ui">'
         f'<tspan fill="{ACCENT}">●</tspan> main  '
-        f'<tspan fill="{MUTED}">│</tspan>  utf-8  '
         f'<tspan fill="{MUTED}">│</tspan>  biomed → software  '
         f'<tspan fill="{MUTED}">│</tspan>  São Paulo, BR</text>'
     )
     parts.append(
-        f'<text x="{svg_w - pad_x}" y="{bar_y+22}" text-anchor="end" class="ui">'
+        f'<text x="{svg_w - pad_x}" y="{bar_y+25}" text-anchor="end" class="ui">'
         f'<tspan class="ok">●</tspan> building'
         f'<tspan fill="{ACCENT}">_<animate attributeName="opacity" values="1;0" dur="1s" calcMode="discrete" repeatCount="indefinite"/></tspan>'
         f'</text>'
