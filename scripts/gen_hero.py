@@ -1,302 +1,266 @@
-"""Generate assets/hero.svg: an ASCII banner whose word is one shape that morphs.
+"""Generate assets/hero.svg: a dot-matrix display that flips between words.
 
-How it works
-- Each word is rasterised (Impact) and turned into a signed distance field.
-- A transition is real shape deformation, not a glyph swap: the word melts into
-  a pill, and the pill opens into the next word (one shape, never cut). The way
-  in is an ease-in, the way out is a damped spring with a small overshoot.
-- Every frame is rendered through a brightness ramp: a soft halo outside the
-  shape, dense characters at the edge, contour bands inside.
-- Output is pure SMIL (no JS), so GitHub renders it inside <img>. Only plain
-  ASCII characters are used, so any monospace font keeps the columns aligned.
+The banner is a board of dim dots. Words are set in a 5x7 pixel font; a lit
+dot is a circle whose radius is interpolated by SMIL, so the change between
+words is smooth at any frame rate (no frame swapping). Dots switch in a
+diagonal wave, lit dots land with a small overshoot, and a band of light
+crosses the board with each change. No JavaScript, no dependencies.
 
-Requirements: numpy, pillow, scipy.
 Usage: python scripts/gen_hero.py assets/hero.svg
 """
 from __future__ import annotations
 
-import math
 import sys
 from xml.sax.saxutils import escape
 
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
-from scipy.ndimage import distance_transform_edt
-
 WORDS = ["MATHEUS", "BIOMED", "KEYMATIC", "CONSTA", "CLUEMED", "BUILDER"]
-TAGLINES = {
-    "MATHEUS": "engineer · founder · builder — São Paulo, BR",
-    "BIOMED": "biomedical engineering roots, software builder mindset",
-    "KEYMATIC": "business automation + applied AI for real companies",
-    "CONSTA": "hospital asset & maintenance management",
-    "CLUEMED": "connected healthcare: records, workflows, documents",
-    "BUILDER": "LLMs · RAG · agents · MCP · local inference",
-}
-FONT_PATH = "/System/Library/Fonts/Supplemental/Impact.ttf"
+TAGLINES = [
+    "Engineer, founder and builder in São Paulo, Brazil",
+    "Biomedical engineering roots, software builder mindset",
+    "Business automation and applied AI for real companies",
+    "Hospital asset and maintenance management",
+    "Connected healthcare: records, workflows, documents",
+    "LLMs · RAG · agents · MCP · local inference",
+]
 
-# character grid and the hi-res field behind it (cells are 1:2, like monospace)
-COLS, ROWS = 100, 14
-CELL_W, CELL_H = 8, 16
-FIELD_W, FIELD_H = COLS * CELL_W, ROWS * CELL_H
-WORD_H = 11 * CELL_H            # cap height of every word, in field pixels
-WORD_MAX_W = int(FIELD_W * 0.92)
+GLYPHS = {
+    "A": [".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
+    "B": ["####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."],
+    "C": [".###.", "#...#", "#....", "#....", "#....", "#...#", ".###."],
+    "D": ["####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####."],
+    "E": ["#####", "#....", "#....", "####.", "#....", "#....", "#####"],
+    "H": ["#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
+    "I": ["###", ".#.", ".#.", ".#.", ".#.", ".#.", "###"],
+    "K": ["#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#"],
+    "L": ["#....", "#....", "#....", "#....", "#....", "#....", "#####"],
+    "M": ["#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#"],
+    "N": ["#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#"],
+    "O": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+    "R": ["####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#"],
+    "S": [".####", "#....", "#....", ".###.", "....#", "....#", "####."],
+    "T": ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."],
+    "U": ["#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+    "Y": ["#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.."],
+}
+
+# board
+COLS, ROWS = 60, 11
+PITCH = 15.0
+R_ON, R_DIM = 5.4, 1.5
+WIDTH, HEIGHT = 960, 300
+X0 = (WIDTH - (COLS - 1) * PITCH) / 2
+Y0 = 70.0
 
 # timing (seconds)
-HOLD = 2.3
-FRAME = 0.055
-IN_FRAMES = 8                   # word -> pill
-PILL_FRAMES = 2                 # the pill rests for a moment
-OUT_FRAMES = 13                 # pill -> next word (spring)
-SPRING_F, SPRING_Z = 1.55, 0.70
+SLOT = 3.4                    # one word, including the change into the next
+DOT_DUR = 0.42                # one dot switching
+COL_DELAY, ROW_DELAY = 0.010, 0.022
+WAVE = (COLS - 1) * COL_DELAY + (ROWS - 1) * ROW_DELAY + DOT_DUR
+TOTAL = SLOT * len(WORDS)
 
-RAMP = " .:-=+*#%@"
-HALO_PX = 6.5                   # half-width of the soft edge, in field pixels
-BANDS = "@#"                    # contour bands inside the shape (deep interior only)
-BAND_PX = 15.0
-CORE_FROM = 5                   # ramp index where the bright layer starts
-
-BG = "#0b0f14"
-FRAME_STROKE = "#1f2a37"
+BG = "#0a0e13"
+STROKE = "#1c2530"
+DIM = "#1a232e"
+DIM_LIT = "#3a4756"
 ACCENT = "#f97316"
 ACCENT_SOFT = "#fdba74"
-HIGHLIGHT = "#ffe3c4"
-HALO = "#8a4513"
 TEXT = "#e6edf3"
 MUTED = "#7d8590"
 GREEN = "#3fb950"
-FONT_STACK = "'JetBrains Mono','Fira Code','SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace"
+FONT = "'JetBrains Mono','Fira Code','SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace"
+
+EASE_ON = "0.2 0.6 0.4 1"     # SMIL splines must stay in 0..1, so the overshoot is its own keyframe
+EASE_SETTLE = "0.4 0 0.6 1"
+OVERSHOOT = 1.14
+EASE_OFF = "0.5 0 0.8 0.5"
+LINEAR = "0 0 1 1"
 
 
-def sdf(mask: np.ndarray) -> np.ndarray:
-    """Signed distance in pixels: negative inside the shape."""
-    return distance_transform_edt(~mask) - distance_transform_edt(mask)
+def word_cells(word: str) -> set[tuple[int, int]]:
+    cols: list[str] = [""] * 7
+    for i, ch in enumerate(word):
+        g = GLYPHS[ch]
+        for r in range(7):
+            cols[r] += ("." if i else "") + g[r]
+    width = len(cols[0])
+    left = (COLS - width) // 2
+    top = (ROWS - 7) // 2
+    return {(left + c, top + r) for r in range(7) for c in range(width) if cols[r][c] == "#"}
 
 
-def word_field(word: str) -> np.ndarray:
-    font = ImageFont.truetype(FONT_PATH, 400)
-    tracking = 34                                   # open the letters up so they read as ASCII
-    boxes = [font.getbbox(ch) for ch in word]
-    top = min(b[1] for b in boxes)
-    bottom = max(b[3] for b in boxes)
-    width = sum(font.getlength(ch) for ch in word) + tracking * (len(word) - 1)
-    img = Image.new("L", (int(width) + 8, bottom - top), 0)
-    draw = ImageDraw.Draw(img)
-    x = 0.0
-    for ch in word:
-        draw.text((x, -top), ch, font=font, fill=255)
-        x += font.getlength(ch) + tracking
-    w = min(WORD_MAX_W, round(img.width * WORD_H / img.height))
-    img = img.resize((w, WORD_H), Image.LANCZOS)
-    canvas = Image.new("L", (FIELD_W, FIELD_H), 0)
-    canvas.paste(img, ((FIELD_W - w) // 2, (FIELD_H - WORD_H) // 2))
-    return sdf(np.asarray(canvas) > 127)
+def f(x: float) -> str:
+    return f"{x:.4f}".rstrip("0").rstrip(".")
 
 
-def pill_field() -> np.ndarray:
-    half_w, half_h = FIELD_W * 0.17, CELL_H * 1.6
-    y, x = np.mgrid[0:FIELD_H, 0:FIELD_W]
-    qx = np.abs(x - FIELD_W / 2) - (half_w - half_h)
-    qy = np.abs(y - FIELD_H / 2)
-    return np.hypot(np.maximum(qx, 0), qy) - half_h
-
-
-def spring(t: float) -> float:
-    """Step response of a damped spring, t in 0..1."""
-    w = 2 * math.pi * SPRING_F
-    wd = w * math.sqrt(1 - SPRING_Z**2)
-    return 1 - math.exp(-SPRING_Z * w * t) * (math.cos(wd * t) + SPRING_Z * w / wd * math.sin(wd * t))
-
-
-def to_ascii(field: np.ndarray) -> list[list[int]]:
-    """Field -> grid of codes: 0..len(RAMP)-1 on the edge, 100+band inside."""
-    cells = field.reshape(ROWS, CELL_H, COLS, CELL_W).mean(axis=(1, 3))
-    grid = []
-    for row in cells:
-        out = []
-        for d in row:
-            if d < -(HALO_PX + 2):
-                out.append(100 + int((-d - HALO_PX) / BAND_PX) % len(BANDS))
-            else:
-                v = min(1.0, max(0.0, 0.5 - d / (2 * HALO_PX)))
-                out.append(round(v * (len(RAMP) - 1)))
-        grid.append(out)
-    return grid
-
-
-def layers(grid: list[list[int]]) -> tuple[list[str], list[str]]:
-    """Split a grid into the dim halo layer and the bright core layer."""
-    halo, core = [], []
-    for row in grid:
-        h, c = [], []
-        for code in row:
-            if code >= 100:
-                h.append(" "); c.append(BANDS[code - 100])
-            elif code >= CORE_FROM:
-                h.append(" "); c.append(RAMP[code])
-            else:
-                h.append(RAMP[code]); c.append(" ")
-        halo.append("".join(h).rstrip())
-        core.append("".join(c).rstrip())
-    return halo, core
-
-
-def blink(intervals: list[tuple[float, float]], total: float) -> str:
-    """Discrete opacity animation that is 1 inside the intervals, 0 outside."""
-    pts = [(0.0, 0)]
-    for a, b in sorted(intervals):
-        if a <= 0:
-            pts[0] = (0.0, 1)
+def dot_animation(states: list[bool], col: int, row: int) -> str:
+    """Radius keyframes for one dot over the whole loop."""
+    delay = col * COL_DELAY + row * ROW_DELAY
+    keys: list[tuple[float, float, str]] = [(0.0, R_ON if states[0] else 0.0, LINEAR)]
+    for i in range(len(states)):
+        a, b = states[i], states[(i + 1) % len(states)]
+        if a == b:
+            continue
+        start = (i + 1) * SLOT - WAVE + delay
+        keys.append((start, R_ON if a else 0.0, LINEAR))
+        if b:
+            keys.append((start + DOT_DUR * 0.68, R_ON * OVERSHOOT, EASE_ON))
+            keys.append((start + DOT_DUR, R_ON, EASE_SETTLE))
         else:
-            pts.append((a / total, 1))
-        if b < total:
-            pts.append((b / total, 0))
-    values = ";".join(str(v) for _, v in pts)
-    times = ";".join(f"{t:.5f}" for t, _ in pts)
+            keys.append((start + DOT_DUR * 0.8, 0.0, EASE_OFF))
+    if keys[-1][0] < TOTAL:
+        keys.append((TOTAL, keys[0][1], LINEAR))
+    values = ";".join(f(v) for _, v, _ in keys)
+    times = ";".join(f(t / TOTAL) for t, _, _ in keys)
+    splines = ";".join(s for _, _, s in keys[1:])
     return (
-        f'<animate attributeName="opacity" values="{values}" keyTimes="{times}" '
-        f'calcMode="discrete" dur="{total:.3f}s" repeatCount="indefinite"/>'
+        f'<animate attributeName="r" values="{values}" keyTimes="{times}" keySplines="{splines}" '
+        f'calcMode="spline" dur="{f(TOTAL)}s" repeatCount="indefinite"/>'
     )
 
 
-def build_frames() -> tuple[list[tuple[float, float, list[list[int]]]], list[float], float]:
-    words = [word_field(w) for w in WORDS]
-    pill = pill_field()
-    frames: list[tuple[float, float, list[list[int]]]] = []
-    mids: list[float] = []      # moment each transition is a pill (tagline swaps here)
-    t = 0.0
-    for i, a in enumerate(words):
-        b = words[(i + 1) % len(words)]
-        frames.append((t, HOLD, to_ascii(a)))
-        t += HOLD
-        for k in range(1, IN_FRAMES + 1):
-            e = (k / (IN_FRAMES + 1)) ** 2.2                  # ease-in: slow start, fast collapse
-            frames.append((t, FRAME, to_ascii(a + e * (pill - a))))
-            t += FRAME
-        mids.append(t)
-        pulse = [0.0, -2.5]
-        for k in range(PILL_FRAMES):
-            frames.append((t, FRAME, to_ascii(pill + pulse[k % 2])))
-            t += FRAME
-        for k in range(1, OUT_FRAMES + 1):
-            s = spring(k / (OUT_FRAMES + 1))
-            frames.append((t, FRAME, to_ascii(pill + s * (b - pill))))
-            t += FRAME
-    return frames, mids, t
+def fade(intervals: list[tuple[float, float]], ramp: float = 0.28) -> str:
+    """Opacity that is 1 inside the intervals, with short fades."""
+    pts: list[tuple[float, float]] = []
+    for a, b in sorted(intervals):
+        if a <= 0:
+            pts.append((0.0, 1))
+        else:
+            pts += [(a, 0), (a + ramp, 1)]
+        if b >= TOTAL:
+            pts.append((TOTAL, 1))
+        else:
+            pts += [(b - ramp, 1), (b, 0)]
+    if pts[0][0] > 0:
+        pts.insert(0, (0.0, 0))
+    if pts[-1][0] < TOTAL:
+        pts.append((TOTAL, pts[0][1]))
+    values = ";".join(f(v) for _, v in pts)
+    times = ";".join(f(t / TOTAL) for t, _ in pts)
+    return f'<animate attributeName="opacity" values="{values}" keyTimes="{times}" dur="{f(TOTAL)}s" repeatCount="indefinite"/>'
 
 
 def main(out_path: str) -> None:
-    frames, mids, total = build_frames()
-
-    font_px = 10.0
-    char_w = font_px * 0.6
-    line_h = 12
-    pad_x = 36
-    art_w = COLS * char_w
-    svg_w = int(art_w + pad_x * 2)
-    art_top = 84
-    art_h = ROWS * line_h
-    tag_y = art_top + art_h + 30
-    svg_h = tag_y + 66
-    bar_y = svg_h - 38
+    cells = [word_cells(w) for w in WORDS]
+    used = sorted(set().union(*cells), key=lambda c: (c[1], c[0]))
+    board_w = (COLS - 1) * PITCH
+    board_h = (ROWS - 1) * PITCH
 
     p: list[str] = []
     p.append(
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_w}" height="{svg_h}" '
-        f'viewBox="0 0 {svg_w} {svg_h}" role="img" aria-labelledby="t d">'
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" '
+        f'viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-labelledby="t d">'
     )
-    p.append('<title id="t">Matheus Godoi — ASCII banner</title>')
+    p.append('<title id="t">Matheus Godoi</title>')
     p.append(
-        '<desc id="d">One ASCII shape morphing between MATHEUS, BIOMED, KEYMATIC, '
+        '<desc id="d">A dot-matrix display flipping between MATHEUS, BIOMED, KEYMATIC, '
         "CONSTA, CLUEMED and BUILDER.</desc>"
     )
     p.append(
         "<style>"
-        f"text{{font-family:{FONT_STACK};}}"
-        f".a{{font-size:{font_px}px;font-weight:700;white-space:pre;}}"
-        f".ui{{font-size:14px;fill:{MUTED};}}"
-        f".cmd{{font-size:15px;fill:{TEXT};}}"
-        f".tag{{font-size:16px;fill:{ACCENT_SOFT};}}"
-        f".ok{{fill:{GREEN};}}"
+        f"text{{font-family:{FONT};}}"
+        f".label{{font-size:12px;fill:{MUTED};letter-spacing:2.4px}}"
+        f".tag{{font-size:16px;fill:{TEXT}}}"
         "</style>"
     )
-    span = svg_w * 2
+
     p.append("<defs>")
     p.append(
-        f'<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="{art_top}" x2="{span}" y2="{art_top + art_h}">'
-        f'<stop offset="0" stop-color="{ACCENT}"/><stop offset="0.36" stop-color="{ACCENT_SOFT}"/>'
-        f'<stop offset="0.5" stop-color="{HIGHLIGHT}"/><stop offset="0.64" stop-color="{ACCENT_SOFT}"/>'
-        f'<stop offset="1" stop-color="{ACCENT}"/>'
-        f'<animateTransform attributeName="gradientTransform" type="translate" '
-        f'values="{-span} 0;{svg_w} 0" dur="5.2s" repeatCount="indefinite"/>'
-        "</linearGradient>"
+        f'<linearGradient id="lit" gradientUnits="userSpaceOnUse" x1="{X0}" y1="{Y0}" x2="{X0 + board_w}" y2="{Y0 + board_h}">'
+        f'<stop offset="0" stop-color="{ACCENT}"/><stop offset="1" stop-color="{ACCENT_SOFT}"/></linearGradient>'
+    )
+    half = PITCH / 2
+    for pid, color, r in (("dim", DIM, R_DIM), ("dimlit", DIM_LIT, R_DIM + 0.5)):
+        p.append(
+            f'<pattern id="{pid}" x="{X0 - half}" y="{Y0 - half}" width="{PITCH}" height="{PITCH}" patternUnits="userSpaceOnUse">'
+            f'<circle cx="{half}" cy="{half}" r="{r}" fill="{color}"/></pattern>'
+        )
+    p.append(
+        '<linearGradient id="band" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/>'
+        '<stop offset="0.5" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+    )
+    # the light band crosses the board once per word change
+    band_w = 260
+    xs, ts = [], []
+    for i in range(len(WORDS)):
+        start = (i + 1) * SLOT - WAVE
+        end = start + WAVE
+        if i == 0:
+            xs.append(-band_w); ts.append(0.0)
+        xs += [-band_w, WIDTH]; ts += [start, end]
+        if i < len(WORDS) - 1:
+            xs.append(-band_w); ts.append(end + 0.001)
+    p.append(
+        f'<mask id="sweep"><rect x="{-band_w}" y="0" width="{band_w}" height="{HEIGHT}" fill="url(#band)">'
+        f'<animate attributeName="x" values="{";".join(str(x) for x in xs)}" keyTimes="{";".join(f(min(t / TOTAL, 1)) for t in ts)}" '
+        f'dur="{f(TOTAL)}s" repeatCount="indefinite"/></rect></mask>'
     )
     p.append(
-        '<pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">'
-        '<rect width="4" height="2" fill="#ffffff" fill-opacity="0.025"/></pattern>'
+        '<filter id="glow" x="-10%" y="-40%" width="120%" height="180%">'
+        '<feGaussianBlur stdDeviation="5" result="b"/>'
+        '<feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.55 0" result="g"/>'
+        '<feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
     )
     p.append("</defs>")
 
-    # window chrome
-    p.append(f'<rect x="0.5" y="0.5" width="{svg_w-1}" height="{svg_h-1}" rx="12" fill="{BG}" stroke="{FRAME_STROKE}"/>')
-    p.append(f'<rect x="1" y="1" width="{svg_w-2}" height="{svg_h-2}" rx="12" fill="url(#scan)"/>')
-    for i, c in enumerate(["#ff5f57", "#febc2e", "#28c840"]):
-        p.append(f'<circle cx="{22 + i*20}" cy="22" r="6" fill="{c}"/>')
-    p.append(f'<text x="{svg_w/2}" y="26" text-anchor="middle" class="ui">matheusbgodoi@github — ~/profile — zsh</text>')
-    p.append(f'<line x1="1" y1="42" x2="{svg_w-1}" y2="42" stroke="{FRAME_STROKE}"/>')
+    # card
+    p.append(f'<rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{HEIGHT - 1}" rx="14" fill="{BG}" stroke="{STROKE}"/>')
+
+    # header
+    p.append(f'<text x="{X0 - half + 2}" y="40" class="label">MATHEUS GODOI</text>')
     p.append(
-        f'<text x="{pad_x}" y="68" class="cmd"><tspan class="ok">➜</tspan> <tspan fill="{ACCENT}">~</tspan> '
-        f'<tspan fill="{MUTED}">$</tspan> whoami | morph --ascii</text>'
+        f'<text x="{X0 + board_w + half - 2}" y="40" text-anchor="end" class="label">'
+        f'<tspan fill="{GREEN}">●<animate attributeName="opacity" values="1;0.25;1" dur="2.4s" repeatCount="indefinite"/></tspan> BUILDING</text>'
     )
 
-    # frames: two text layers each (dim halo, bright core)
-    def text_block(rows: list[str], fill: str) -> str:
-        spans = []
-        for r, row in enumerate(rows):
-            if row:
-                spans.append(f'<tspan x="{pad_x}" y="{art_top + (r + 1) * line_h}">{escape(row)}</tspan>')
-        return f'<text class="a" fill="{fill}" xml:space="preserve">{"".join(spans)}</text>'
+    # board: dim dots, the light band, then the lit dots
+    bx, by = X0 - half, Y0 - half
+    bw, bh = COLS * PITCH, ROWS * PITCH
+    p.append(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" fill="url(#dim)"/>')
+    p.append(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" fill="url(#dimlit)" mask="url(#sweep)"/>')
+    p.append('<g fill="url(#lit)" filter="url(#glow)">')
+    for col, row in used:
+        states = [(col, row) in c for c in cells]
+        cx, cy = X0 + col * PITCH, Y0 + row * PITCH
+        if all(states):
+            p.append(f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{R_ON}"/>')
+        else:
+            p.append(
+                f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{R_ON if states[0] else 0}">'
+                f"{dot_animation(states, col, row)}</circle>"
+            )
+    p.append("</g>")
 
-    for idx, (start, dur, grid) in enumerate(frames):
-        halo, core = layers(grid)
-        p.append(f'<g opacity="{1 if idx == 0 else 0}">')
-        p.append(blink([(start, start + dur)], total))
-        p.append(text_block(halo, HALO))
-        p.append(text_block(core, "url(#g)"))
-        p.append("</g>")
+    # footer: tagline for the current word, and one progress segment per word
+    foot_y = HEIGHT - 34
+    mid = WAVE / 2
+    for i, line in enumerate(TAGLINES):
+        a = i * SLOT - mid
+        b = (i + 1) * SLOT - mid
+        intervals = [(a, b)] if i else [(0.0, b), (TOTAL - mid, TOTAL)]
+        p.append(f'<text x="{X0 - half + 2}" y="{foot_y}" class="tag" opacity="{1 if i == 0 else 0}">{escape(line)}{fade(intervals)}</text>')
 
-    # taglines swap while the shape is a pill
-    n = len(WORDS)
-    for i, w in enumerate(WORDS):
-        a, b = mids[i - 1], mids[i]
-        intervals = [(a, b)] if i > 0 else [(0.0, b), (mids[-1], total)]
-        p.append(f'<g opacity="{1 if i == 0 else 0}">')
-        p.append(blink(intervals, total))
+    seg_w, seg_gap = 28, 6
+    seg_x = X0 + board_w + half - 2 - (len(WORDS) * seg_w + (len(WORDS) - 1) * seg_gap)
+    for i in range(len(WORDS)):
+        x = seg_x + i * (seg_w + seg_gap)
+        p.append(f'<rect x="{f(x)}" y="{foot_y - 7}" width="{seg_w}" height="3" rx="1.5" fill="{STROKE}"/>')
+        a, b = i * SLOT, (i + 1) * SLOT
+        vals, times = ["0"], ["0"]
+        if a > 0:
+            vals.append("0"); times.append(f(a / TOTAL))
+        vals.append(str(seg_w)); times.append(f(b / TOTAL))
+        if b < TOTAL:
+            vals.append(str(seg_w)); times.append("1")
         p.append(
-            f'<text x="{pad_x}" y="{tag_y}" class="cmd"><tspan fill="{MUTED}">// </tspan>'
-            f'<tspan class="tag">{escape(TAGLINES[w])}</tspan></text>'
+            f'<rect x="{f(x)}" y="{foot_y - 7}" width="0" height="3" rx="1.5" fill="{ACCENT}">'
+            f'<animate attributeName="width" values="{";".join(vals)}" keyTimes="{";".join(times)}" dur="{f(TOTAL)}s" repeatCount="indefinite"/></rect>'
         )
-        p.append("</g>")
 
-    # status bar
-    p.append(f'<line x1="1" y1="{bar_y}" x2="{svg_w-1}" y2="{bar_y}" stroke="{FRAME_STROKE}"/>')
-    p.append(
-        f'<text x="{pad_x}" y="{bar_y+25}" class="ui">'
-        f'<tspan fill="{ACCENT}">●</tspan> main  '
-        f'<tspan fill="{MUTED}">│</tspan>  biomed → software  '
-        f'<tspan fill="{MUTED}">│</tspan>  São Paulo, BR</text>'
-    )
-    p.append(
-        f'<text x="{svg_w - pad_x}" y="{bar_y+25}" text-anchor="end" class="ui">'
-        f'<tspan class="ok">●</tspan> building'
-        f'<tspan fill="{ACCENT}">_<animate attributeName="opacity" values="1;0" dur="1s" calcMode="discrete" repeatCount="indefinite"/></tspan>'
-        "</text>"
-    )
     p.append("</svg>")
-
     svg = "\n".join(p)
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write(svg)
-    print(f"{out_path}: {len(svg.encode())/1024:.0f} KB, {len(frames)} frames, {total:.1f}s loop, {COLS}x{ROWS} chars, {n} words")
+    print(f"{out_path}: {len(svg.encode()) / 1024:.0f} KB, {len(used)} dots, {TOTAL:.1f}s loop")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/matheusbgodoi">
-    <img src="./assets/hero.svg" width="100%" alt="Animated ASCII terminal banner morphing between MATHEUS, BIOMED, KEYMATIC, CONSTA, CLUEMED and BUILDER" />
+    <img src="./assets/hero.svg" width="100%" alt="Dot-matrix display flipping between MATHEUS, BIOMED, KEYMATIC, CONSTA, CLUEMED and BUILDER" />
   </a>
   <p>
     <a href="https://www.linkedin.com/in/matheusgodoi-engbio/"><img src="https://img.shields.io/badge/linkedin-%2F%2F%20connect-0b0f14?style=flat-square&labelColor=0b0f14&color=f97316&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
