@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/profile-banner.svg" width="100%" alt="Matheus Godoi — engineer, founder and builder working on applied AI, automation and healthcare. Keymatic / Consta / ClueMed." />
+<img src="./assets/profile-banner.svg" width="100%" alt="Matheus Godoi — engineer, founder and builder working on applied AI, automation and healthcare. Keymatic AI / Consta Care / ClueMed." />
 
 <br />
 
@@ -8,7 +8,7 @@
 
 <p>
   <a href="https://www.linkedin.com/in/matheusgodoi-engbio/"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&amp;logo=linkedin&amp;logoColor=white" alt="Connect on LinkedIn" /></a>
-  <a href="https://www.keymatic.com.br/"><img src="https://img.shields.io/badge/Keymatic-F97316?style=flat-square&amp;logoColor=white" alt="Visit Keymatic" /></a>
+  <a href="https://www.keymatic.com.br/"><img src="https://img.shields.io/badge/Keymatic_AI-F97316?style=flat-square&amp;logoColor=white" alt="Visit Keymatic AI" /></a>
   <a href="https://cluemed.com.br/"><img src="https://img.shields.io/badge/ClueMed-147D92?style=flat-square&amp;logoColor=white" alt="Visit ClueMed" /></a>
   <img src="https://img.shields.io/badge/S%C3%A3o_Paulo-Brazil-30363D?style=flat-square" alt="Based in São Paulo, Brazil" />
 </p>
@@ -27,8 +27,8 @@ I work across product, code and integrations, with a particular interest in LLMs
 
 | Company | Focus | What I'm working on |
 | :--- | :--- | :--- |
-| **[Keymatic](https://www.keymatic.com.br/)** | Business automation & applied AI | WhatsApp and Instagram workflows, API integrations and AI-assisted customer service. |
-| **Consta** | Hospital asset & maintenance management | Bringing equipment, contracts, maintenance schedules and documentation together. Currently in development. |
+| **[Keymatic AI](https://www.keymatic.com.br/)** | Business automation & applied AI | WhatsApp and Instagram workflows, API integrations and AI-assisted customer service. |
+| **Consta Care** | Hospital asset & maintenance management | Bringing equipment, contracts, maintenance schedules and documentation together. Currently in development. |
 | **[ClueMed](https://cluemed.com.br/)** | Connected healthcare | Patient-owned health records, clinical workflows and AI-assisted document processing. |
 
 ## Areas I work in
